@@ -2,7 +2,7 @@ import { NextResponse } from 'next/server';
 import { globalStore } from '@/lib/store';
 import { MetaPixelEventConfig } from '@localrank/types';
 
-export const STANDARD_META_EVENTS: MetaPixelEventConfig[] = [
+const STANDARD_META_EVENTS: MetaPixelEventConfig[] = [
   {
     eventName: 'PageView',
     description: 'Track key page views across your entire site. Standard base tracking event.',
