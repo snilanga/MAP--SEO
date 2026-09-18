@@ -1,0 +1,39 @@
+{
+  "manifest_version": 3,
+  "name": "LocalRank Audit - GBP & Local SEO",
+  "version": "1.0.0",
+  "description": "Original Google Business Profile & Local SEO auditing assistant for agencies and business owners.",
+  "permissions": [
+    "storage",
+    "activeTab",
+    "scripting",
+    "sidePanel"
+  ],
+  "host_permissions": [
+    "https://www.google.com/maps/*",
+    "https://maps.google.com/*",
+    "https://www.google.com/search*"
+  ],
+  "action": {
+    "default_popup": "popup.html",
+    "default_title": "LocalRank Audit"
+  },
+  "side_panel": {
+    "default_path": "sidepanel.html"
+  },
+  "background": {
+    "service_worker": "src/background/serviceWorker.ts",
+    "type": "module"
+  },
+  "content_scripts": [
+    {
+      "matches": [
+        "https://www.google.com/maps/*",
+        "https://maps.google.com/*",
+        "https://www.google.com/search*"
+      ],
+      "js": ["src/content/contentScript.ts"],
+      "run_at": "document_idle"
+    }
+  ]
+}

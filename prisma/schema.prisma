@@ -1,0 +1,331 @@
+datasource db {
+  provider = "sqlite"
+  url      = env("DATABASE_URL")
+}
+
+generator client {
+  provider = "prisma-client-js"
+}
+
+model User {
+  id            String          @id @default(cuid())
+  email         String          @unique
+  name          String?
+  passwordHash  String?
+  role          String          @default("MEMBER") // ADMIN, OWNER, MEMBER
+  createdAt     DateTime        @default(now())
+  updatedAt     DateTime        @updatedAt
+  memberships   OrganizationMember[]
+  apiCredentials ApiCredential[]
+  usageEvents   UsageEvent[]
+}
+
+model Organization {
+  id            String          @id @default(cuid())
+  name          String
+  slug          String          @unique
+  logoUrl       String?
+  website       String?
+  phone         String?
+  email         String?
+  plan          String          @default("STARTER") // FREE, STARTER, PROFESSIONAL, AGENCY
+  createdAt     DateTime        @default(now())
+  updatedAt     DateTime        @updatedAt
+  members       OrganizationMember[]
+  projects      Project[]
+  subscriptions Subscription[]
+  usageEvents   UsageEvent[]
+}
+
+model OrganizationMember {
+  id             String       @id @default(cuid())
+  userId         String
+  organizationId String
+  role           String       @default("MEMBER")
+  createdAt      DateTime     @default(now())
+  user           User         @relation(fields: [userId], references: [id], onDelete: Cascade)
+  organization   Organization @relation(fields: [organizationId], references: [id], onDelete: Cascade)
+
+  @@unique([userId, organizationId])
+}
+
+model Project {
+  id             String       @id @default(cuid())
+  organizationId String
+  name           String
+  description    String?
+  createdAt      DateTime     @default(now())
+  updatedAt      DateTime     @updatedAt
+  organization   Organization @relation(fields: [organizationId], references: [id], onDelete: Cascade)
+  businesses     Business[]
+  rankProjects   RankProject[]
+}
+
+model Business {
+  id                 String               @id @default(cuid())
+  projectId          String
+  name               String
+  placeId            String?
+  address            String?
+  street             String?
+  city               String?
+  state              String?
+  postalCode         String?
+  country            String?
+  phone              String?
+  website            String?
+  primaryCategory    String?
+  secondaryCategories String?             // JSON string array
+  rating             Float?
+  reviewCount        Int                  @default(0)
+  openingHours       String?
+  description        String?
+  latitude           Float?
+  longitude          Float?
+  mapsUrl            String?
+  createdAt          DateTime             @default(now())
+  updatedAt          DateTime             @updatedAt
+  project            Project              @relation(fields: [projectId], references: [id], onDelete: Cascade)
+  locations          BusinessLocation[]
+  audits             Audit[]
+  websites           Website[]
+  reviews            Review[]
+  reviewAnalyses     ReviewAnalysis[]
+  competitors        Competitor[]
+  reports            Report[]
+  monitoringJobs     MonitoringJob[]
+  monitoringSnapshots MonitoringSnapshot[]
+}
+
+model BusinessLocation {
+  id          String   @id @default(cuid())
+  businessId  String
+  name        String
+  address     String
+  latitude    Float
+  longitude   Float
+  phone       String?
+  createdAt   DateTime @default(now())
+  business    Business @relation(fields: [businessId], references: [id], onDelete: Cascade)
+}
+
+model Audit {
+  id             String        @id @default(cuid())
+  businessId     String
+  overallScore   Int
+  grade          String
+  passedCount    Int
+  warningCount   Int
+  issueCount     Int
+  notAvailableCount Int
+  categoryScores String        // JSON
+  summaryJson    String        // JSON
+  createdAt      DateTime      @default(now())
+  business       Business      @relation(fields: [businessId], references: [id], onDelete: Cascade)
+  results        AuditResult[]
+}
+
+model AuditResult {
+  id             String   @id @default(cuid())
+  auditId        String
+  ruleId         String
+  category       String
+  severity       String
+  status         String
+  message        String
+  explanation    String
+  recommendation String
+  evidence       String?
+  dataSource     String
+  confidence     Float
+  createdAt      DateTime @default(now())
+  audit          Audit    @relation(fields: [auditId], references: [id], onDelete: Cascade)
+}
+
+model AuditRule {
+  id             String   @id
+  name           String
+  category       String
+  weight         Int
+  severity       String
+  description    String
+  recommendation String
+  whyItMatters   String
+  isActive       Boolean  @default(true)
+}
+
+model Website {
+  id          String        @id @default(cuid())
+  businessId  String
+  url         String
+  isHttps     Boolean       @default(true)
+  createdAt   DateTime      @default(now())
+  updatedAt   DateTime      @updatedAt
+  business    Business      @relation(fields: [businessId], references: [id], onDelete: Cascade)
+  pages       WebsitePage[]
+}
+
+model WebsitePage {
+  id                     String   @id @default(cuid())
+  websiteId              String
+  url                    String
+  httpStatus             Int
+  title                  String?
+  metaDescription        String?
+  h1Tags                 String?  // JSON
+  wordCount              Int      @default(0)
+  hasLocalBusinessSchema Boolean  @default(false)
+  detectedNap            String?  // JSON
+  crawledAt              DateTime @default(now())
+  website                Website  @relation(fields: [websiteId], references: [id], onDelete: Cascade)
+}
+
+model Review {
+  id          String    @id @default(cuid())
+  businessId  String
+  authorName  String
+  rating      Int
+  text        String
+  publishTime DateTime
+  replyText   String?
+  replyTime   DateTime?
+  sentiment   String?
+  createdAt   DateTime  @default(now())
+  business    Business  @relation(fields: [businessId], references: [id], onDelete: Cascade)
+}
+
+model ReviewAnalysis {
+  id              String   @id @default(cuid())
+  businessId      String
+  totalReviews    Int
+  averageRating   Float
+  responseRate    Float
+  topicsJson      String   // JSON
+  sentimentSummary String  // JSON
+  generatedAt     DateTime @default(now())
+  business        Business @relation(fields: [businessId], references: [id], onDelete: Cascade)
+}
+
+model Competitor {
+  id                 String               @id @default(cuid())
+  businessId         String
+  name               String
+  primaryCategory    String?
+  rating             Float?
+  reviewCount        Int                  @default(0)
+  website            String?
+  createdAt          DateTime             @default(now())
+  business           Business             @relation(fields: [businessId], references: [id], onDelete: Cascade)
+  snapshots          CompetitorSnapshot[]
+}
+
+model CompetitorSnapshot {
+  id                 String     @id @default(cuid())
+  competitorId       String
+  rating             Float
+  reviewCount        Int
+  servicesCount      Int
+  photosCount        Int
+  completenessScore  Int
+  observedDiffsJson  String     // JSON
+  capturedAt         DateTime   @default(now())
+  competitor         Competitor @relation(fields: [competitorId], references: [id], onDelete: Cascade)
+}
+
+model RankProject {
+  id          String     @id @default(cuid())
+  projectId   String
+  keyword     String
+  location    String
+  gridSize    Int        @default(5)
+  radiusKm    Float      @default(5.0)
+  createdAt   DateTime   @default(now())
+  project     Project    @relation(fields: [projectId], references: [id], onDelete: Cascade)
+  scans       RankScan[]
+}
+
+model RankScan {
+  id            String      @id @default(cuid())
+  rankProjectId String
+  averageRank   Float?
+  status        String      @default("COMPLETED")
+  provider      String?
+  createdAt     DateTime    @default(now())
+  rankProject   RankProject @relation(fields: [rankProjectId], references: [id], onDelete: Cascade)
+  points        RankPoint[]
+}
+
+model RankPoint {
+  id          String   @id @default(cuid())
+  rankScanId  String
+  row         Int
+  col         Int
+  latitude    Float
+  longitude   Float
+  rank        Int?
+  topBusiness String?
+  rankScan    RankScan @relation(fields: [rankScanId], references: [id], onDelete: Cascade)
+}
+
+model Report {
+  id          String   @id @default(cuid())
+  businessId  String
+  format      String   @default("PDF") // PDF, CSV, JSON
+  title       String
+  reportData  String   // JSON
+  createdAt   DateTime @default(now())
+  business    Business @relation(fields: [businessId], references: [id], onDelete: Cascade)
+}
+
+model MonitoringJob {
+  id          String   @id @default(cuid())
+  businessId  String
+  frequency   String   @default("WEEKLY") // DAILY, WEEKLY, MONTHLY
+  isActive    Boolean  @default(true)
+  lastRunAt   DateTime?
+  nextRunAt   DateTime?
+  createdAt   DateTime @default(now())
+  business    Business @relation(fields: [businessId], references: [id], onDelete: Cascade)
+}
+
+model MonitoringSnapshot {
+  id          String   @id @default(cuid())
+  businessId  String
+  score       Int
+  reviewCount Int
+  rating      Float
+  changesJson String?  // JSON
+  capturedAt  DateTime @default(now())
+  business    Business @relation(fields: [businessId], references: [id], onDelete: Cascade)
+}
+
+model ApiCredential {
+  id          String   @id @default(cuid())
+  userId      String
+  provider    String   // GOOGLE, OPENAI, RANK_TRACKER
+  key         String
+  createdAt   DateTime @default(now())
+  user        User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+}
+
+model Subscription {
+  id             String       @id @default(cuid())
+  organizationId String
+  plan           String       @default("STARTER")
+  status         String       @default("ACTIVE")
+  currentPeriodEnd DateTime?
+  createdAt      DateTime     @default(now())
+  organization   Organization @relation(fields: [organizationId], references: [id], onDelete: Cascade)
+}
+
+model UsageEvent {
+  id             String        @id @default(cuid())
+  organizationId String
+  userId         String?
+  eventType      String        // AUDIT_RUN, WEBSITE_CRAWL, AI_RECOMMENDATION, PDF_REPORT, RANK_SCAN
+  quantity       Int           @default(1)
+  metadata       String?       // JSON
+  createdAt      DateTime      @default(now())
+  organization   Organization  @relation(fields: [organizationId], references: [id], onDelete: Cascade)
+  user           User?         @relation(fields: [userId], references: [id], onDelete: SetNull)
+}

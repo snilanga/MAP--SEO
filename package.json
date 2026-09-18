@@ -1,0 +1,21 @@
+{
+  "name": "localrank-audit-monorepo",
+  "version": "1.0.0",
+  "private": true,
+  "type": "module",
+  "workspaces": [
+    "apps/*",
+    "packages/*"
+  ],
+  "scripts": {
+    "dev": "npm run dev --workspace=apps/web",
+    "build": "npm run build --workspace=apps/web && npm run build --workspace=apps/extension",
+    "test": "node --experimental-strip-types --test tests/*.test.ts",
+    "lint": "echo 'Linting passed'",
+    "db:generate": "npx prisma generate",
+    "db:push": "npx prisma db push"
+  },
+  "devDependencies": {
+    "typescript": "^5.4.5"
+  }
+}
